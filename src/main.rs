@@ -15,7 +15,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let size = std::env::args()
         .nth(2)
         .map(|a| a.parse())
-        .unwrap_or(Ok(8))?;
+        .unwrap_or(Ok(1))?;
+    let width = std::env::args().nth(3).and_then(|a| a.parse().ok());
 
     let base = if palette.starts_with("https://lospec.com") {
         palette
@@ -37,11 +38,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{name} by {author}");
     let ideal_side_length = (colours.len() as f64).sqrt();
     let side_length = ideal_side_length.ceil() as u32;
+    let (width, height) = if let Some(width) = width {
+        (width, f64::ceil(colours.len() as f64 / width as f64) as u32)
+    } else {
+        (side_length, side_length)
+    };
+    println!("{} colours: {width}x{height}", colours.len());
 
     let mut colours_2d = vec![vec![]];
     for colour in colours {
         let mut current = colours_2d.last_mut().unwrap();
-        if current.len() >= side_length as usize {
+        if current.len() >= width as usize {
             colours_2d.push(vec![]);
             current = colours_2d.last_mut().unwrap();
         }
@@ -52,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         current.push(Colour { r, g, b });
     }
 
-    let mut imgbuf = image::ImageBuffer::new(side_length * size, side_length * size);
+    let mut imgbuf = image::ImageBuffer::new(width * size, height * size);
 
     for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
         let i = (y / size) as usize;
